@@ -179,7 +179,7 @@ void do_tail_common(char *path,int opt)
 	}
 	if(i==path_len)
 	{
-		printf("can not open the dir,please the real name of dir!\n");
+		printf("can not open the dir,please input the real name of dir!\n");
 		exit(EXIT_FAILURE);
 	}
 	dirname[++i]='\0';
@@ -406,7 +406,7 @@ int main(int argc,char **argv)
 	if(argc<=1)
 	{
 		printf("argument is wrong!\n");
-		printf("Usage:./tail [-n] [-t] dirpath/!\n");
+		printf("Usage:./tail [-n] dirpath/!\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -426,7 +426,11 @@ int main(int argc,char **argv)
 	}
 	else
 	{
-		char *path=argv[argc-1];
+		char *path=NULL;
+		if(argv[argc-1][0]=='-')
+		  path=argv[1];
+		else
+		  path=argv[argc-1];
 		int opt;
 		while((opt=getopt(argc,argv,"n"))!=-1)
 		{
@@ -453,7 +457,7 @@ int main(int argc,char **argv)
 					break;
 					*/
 				default:
-					fprintf(stderr,"Usage:%s [-t] [-n] dirname\n",argv[0]);
+					fprintf(stderr,"Usage:%s [-n] dirname\n",argv[0]);
 					exit(EXIT_FAILURE);
 			}
 		}

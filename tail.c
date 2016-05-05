@@ -7,11 +7,58 @@
 #include <errno.h>
 #include <unistd.h>
 #include <assert.h>
+#include <glob.h>
 #include "define.h"
 
 #define PATH 1
 #define COMMON 2
 FILENODE *filelist=NULL;
+char *myname;/*to stor the exe_name*/
+
+/*
+ *
+ *globerr ---print error message for glob()
+ * 
+ */
+int globerr(const char *path,int eerrno)
+{
+	fprintf(stderr,"%s:%s:%s\n",myname,path,strerror(eerrno));
+	return 0;
+}
+
+/*
+ *get_path ---expand command-line wildcards 
+ */
+glob_t get_path(int argc,char **argv)
+{
+	int i;
+	int flags=0;
+	glob_t results;
+	int ret;
+	if(argc == 1)
+	{
+		fprintf(stderr,"Usage: %s [-n] path ...\n",argv[0]);
+		exit(EXIT_FAILURE);
+	}
+	myname=argv[0];
+	for(i=1;i<argc;i++)
+	{
+		flags |= (i > 1 ? GLOB_APPEND : 0);
+		ret=glob(argv[i],flags,globerr,&results);
+		if(ret!=0)
+		{
+			fprintf(stderr, "%s: problem with %s (%s),stopping early\n",
+						myname,argv[i],
+						(ret==GLOB_ABORTED?"filesystem problem":
+						 ret==GLOB_NOMATCH?"no match of pattern":
+						 ret==GLOB_NOSPACE?"no dynamic memory":
+						 "unknown problem"));
+			break;
+		}
+	}
+	return results;
+}
+
 
 
 int path_paser(char *path)
@@ -163,7 +210,7 @@ int is_substr(char *src,char *dest)
 	return 1;
 }
 
-void do_tail_common(char *path,int opt)
+void do_tail_common(int argc,char **argv,char *path,int opt)
 {
 	/*
 	 *save the dirname in variable dirname,and save filename in variable filename_common;
@@ -171,17 +218,29 @@ void do_tail_common(char *path,int opt)
 	char dirname[100];
 	int path_len=strlen(path);
 	int i;
-	for(i=0;i<path_len;i++)
+	glob_t results=get_path(argc,argv);
+	
+	for(i=path_len-1;i>=0;i--)
 	{
-		dirname[i]=path[i];
+		//dirname[i]=path[i];
 		if(path[i]=='/')
-		  break;
+		{
+			int j=0;
+			while(j<=i)
+			{
+				dirname[j]=path[j];
+				j++;
+			}
+			dirname[j]='\0';
+			break;
+		}
 	}
-	if(i==path_len)
+	if(i==0)
 	{
 		printf("can not open the dir,please input the real name of dir!\n");
 		exit(EXIT_FAILURE);
 	}
+	/*
 	dirname[++i]='\0';
 	char filename_common[100];
 	memset(filename_common,0,100);
@@ -191,10 +250,12 @@ void do_tail_common(char *path,int opt)
 		filename_common[j++]=path[i];
 	}
 	filename_common[j]='\0';
+	*/
 
 	/*
 	 *then cicle the whole file in the dir;
 	 */
+
 	int initlist_flag=1;
 	while(1)
 	{
@@ -214,19 +275,36 @@ void do_tail_common(char *path,int opt)
 				char *name=file->d_name;
 				if(name[0]=='.')
 				  continue;
-				if(is_substr(name,filename_common))
+				int i=0;
+				while(i<results.gl_pathc)
 				{
-					FILENODE *new_file_node=(FILENODE *)malloc(sizeof(FILENODE));
-					char *name=file->d_name;
-					char *file_path_name=(char *)malloc(strlen(dirname)+strlen(name)+2);
-					strcpy(file_path_name,dirname);
-					strcat(file_path_name,name);
-					off_t size=file_size(file_path_name);
-					new_file_node->filesize=size;
-					new_file_node->lastposition=size;
-					new_file_node->filename=file_path_name;
-					new_file_node->next=NULL;
-					insert_filelist(new_file_node);
+					char filename_common[100];
+					memset(filename_common,0,100);
+					int len=strlen(results.gl_pathv[i]);
+					int dir_len=strlen(dirname);
+					int j=0;
+					while(j<len-dir_len)
+					{
+						filename_common[j]=results.gl_pathv[i][j+dir_len];
+						j++;
+					}
+					filename_common[j]='\0';
+					if(is_substr(name,filename_common))
+					{
+						FILENODE *new_file_node=(FILENODE *)malloc(sizeof(FILENODE));
+						char *name=file->d_name;
+						char *file_path_name=(char *)malloc(strlen(dirname)+strlen(name)+2);
+						strcpy(file_path_name,dirname);
+						strcat(file_path_name,name);
+						off_t size=file_size(file_path_name);
+						new_file_node->filesize=size;
+						new_file_node->lastposition=size;
+						new_file_node->filename=file_path_name;
+						new_file_node->next=NULL;
+						insert_filelist(new_file_node);
+						break;
+					}
+					i++;
 				}
 			}
 		}
@@ -238,57 +316,52 @@ void do_tail_common(char *path,int opt)
 				char *name=file->d_name;
 				if(name[0]=='.')
 				  continue;
-				if(is_substr(name,filename_common))
+				char *file_path_name=(char *)malloc(strlen(dirname)+strlen(name)+2);
+				strcpy(file_path_name,dirname);
+				strcat(file_path_name,name);
+				off_t size=file_size(file_path_name);
+				FILENODE *it=filelist;
+				while(it)
 				{
-					char *file_path_name=(char *)malloc(strlen(dirname)+strlen(name)+2);
-					strcpy(file_path_name,dirname);
-					strcat(file_path_name,name);
-					off_t size=file_size(file_path_name);
-					FILENODE *it=filelist;
-					while(it)
+					if(strcmp((*it).filename,file_path_name)==0)
 					{
-						if(strcmp((*it).filename,file_path_name)==0)
+
+						if((*it).filesize<size)
 						{
-
-							if((*it).filesize<size)
+							(*it).filesize=size;
+							if(opt==1)
 							{
-								(*it).filesize=size;
-								if(opt==1)
-								{
-									tail_file_addhead((*it).filename,(*it).lastposition,(*it).filesize);
-								}
-								if(opt==0)
-								{
-									tail_file_nohead((*it).filename,(*it).lastposition,(*it).filesize);
-								}
-								(*it).lastposition=size;
+								tail_file_addhead((*it).filename,(*it).lastposition,(*it).filesize);
 							}
-							else if((*it).filesize>size)
+							if(opt==0)
 							{
-								(*it).filesize=size;
-								(*it).lastposition=size;
+								tail_file_nohead((*it).filename,(*it).lastposition,(*it).filesize);
 							}
-							break;
+							(*it).lastposition=size;
 						}
-						it=it->next;
+						else if((*it).filesize>size)
+						{
+							(*it).filesize=size;
+							(*it).lastposition=size;
+						}
+						break;
 					}
-					/*
-					 *
-					 *if not found file int the list then insert the file info
-					 */
-					if(it==NULL)
-					{
-						FILENODE *node=(FILENODE *)malloc(sizeof(FILENODE));
-						node->filesize=size;
-						node->lastposition=size;
-						node->filename=file_path_name;
-						node->next=NULL;
-						insert_filelist(node);
-					}
-
-
+					it=it->next;
 				}
-			
+				/*
+				 *if not found file int the list then insert the file info
+				 */
+				/*
+				if(it==NULL)
+				{
+					FILENODE *node=(FILENODE *)malloc(sizeof(FILENODE));
+					node->filesize=size;
+					node->lastposition=size;
+					node->filename=file_path_name;
+					node->next=NULL;
+					insert_filelist(node);
+				}
+				*/
 			}
 
 		}
@@ -399,6 +472,8 @@ void do_tail(char *path,int opt)
 
 
 
+
+
 int main(int argc,char **argv)
 {
 	
@@ -409,20 +484,22 @@ int main(int argc,char **argv)
 		printf("Usage:./tail [-n] dirpath/!\n");
 		exit(EXIT_FAILURE);
 	}
-
 	
-	else if(argc==2)
+    if(argc<=2)
 	{
 		char *path=argv[1];
+		//char *path="/home/wjb/src/apps/tail/test/test*";
+		//char *array[2]={"/home/wjb/github/tail/tail","/home/wjb/src/apps/tail/test/test*"};
 		if(path_paser(path)==PATH)
 		  do_tail(path,0);
 		else if(path_paser(path)==COMMON)
-		  do_tail_common(path,0);
+		  do_tail_common(argc,argv,path,0);
 		else
 		{
 			printf("not a dir or common symbol!\n");
 			exit(EXIT_FAILURE);
 		}
+
 	}
 	else
 	{
@@ -443,7 +520,7 @@ int main(int argc,char **argv)
 					}
 					else if(path_paser(path)==COMMON)
 					{
-						do_tail_common(path,1);
+						do_tail_common(argc,argv,path,1);
 					}
 					else
 					{

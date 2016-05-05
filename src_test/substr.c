@@ -9,21 +9,22 @@ int substr(char *dest,char *src)
 	  return 0;
 	if(strlen(dest)>strlen(src))
 	  return 0;
-	int i;
-	for(i=0;i<strlen(dest);i++)
+	int i=strlen(dest)-1;
+	int j=strlen(src)-1;
+	while(i>=0)
 	{
-		if(dest[i]!=src[i])
-		  break;
+		if(dest[i]!=src[j])
+		  return 0;
+		i--;
+		j--;
 	}
-	if(i<strlen(dest))
-	  return 0;
 	return 1;
 }
 int main(void)
 {
 
-	char *src="wo shi wj";
-	char *dest="wo shi wjb";
+	char *src="/home/wjb/test/test.x";
+	char *dest="test.x";
 	int is=substr(dest,src);
 	printf("%d\n",is);
 	return 0;

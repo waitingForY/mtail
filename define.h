@@ -16,6 +16,10 @@ typedef struct fileNode
 }FILENODE;
 
 #define ERR_EXIT(m) do{perror(m);exit(EXIT_FAILURE);}while(0)
-
+#define HAS_OPT 1
+#define NO_OPT 0
+#define OPT_POS_BETWEEN 0
+#define OPT_POS_TAIL 1
+#define MAX_STR_SIZE 100
 
 #endif //_DEFINE_H

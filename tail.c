@@ -10,10 +10,6 @@
 #include <glob.h>
 #include "define.h"
 
-#define HAS_OPT 1
-#define NO_OPT 0
-#define OPT_POS_BETWEEN 0
-#define OPT_POS_TAIL 1
 FILENODE *filelist=NULL;
 char *myname;/*to stor the exe_name*/
 
@@ -124,7 +120,7 @@ void tail_file_addhead(char *filename,off_t lastposition,off_t filesize)
 	for(n=lastposition;n<filesize;)
 	{
 		/*char *head=(char *)malloc(sizeof(filename)+3);*/
-		char head[100];
+		char head[MAX_STR_SIZE];
 		memset(head,0,sizeof(head));
 		strcpy(head,"[");
 		strcat(head,filename);
@@ -203,7 +199,9 @@ int is_substr(char *src,char *dest)
 }
 
 
-
+/*
+ *if open a dirctory than do this function
+ */
 
 void do_tail_dir(char *path,int opt)
 {
@@ -308,12 +306,17 @@ void do_tail_dir(char *path,int opt)
 }
 
 
+/*
+ *do_tail
+ *
+ */
+
 void do_tail(int argc,char **argv,int opt,int opt_position)
 {
 	/*
 	 *save the dirname in variable dirname,and save filename in variable filename_common;
 	 */
-	char dirname[100];
+	char dirname[MAX_STR_SIZE];
 	int i;
 	glob_t results=get_path(argc,argv,opt+1,opt_position);
 	int path_len=strlen(results.gl_pathv[0]);
@@ -493,25 +496,5 @@ int main(int argc,char **argv)
 		  do_tail(argc,argv,NO_OPT,OPT_POS_BETWEEN);
 
 	}
-	
-	/*
-	int opt;
-	while((opt=getopt(argc,argv,"nt"))!=-1)
-	{
-		switch (opt)
-		{
-			case 'n':
-				do_tail(path);
-				break;
-			case 't':
-				printf("hai mei shixian !\n");
-				break;
-			default:
-				fprintf(stderr,"Usage:%s [-t] [-n] dirname\n",argv[0]);
-				exit(EXIT_FAILURE);
-		}
-	}
-	*/
-
 	return 0;
 }

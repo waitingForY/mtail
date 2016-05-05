@@ -1,4 +1,3 @@
-
 #ifndef _DEFINE_H
 #define _DEFINE_H
 #include <sys/types.h>
@@ -6,7 +5,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-//define struct fileNode 
 typedef struct fileNode
 {
 	off_t filesize; /*file current size*/
@@ -22,4 +20,4 @@ typedef struct fileNode
 #define OPT_POS_TAIL 1
 #define MAX_STR_SIZE 100
 
-#endif //_DEFINE_H
+#endif /*_DEFINE_H */

@@ -334,6 +334,8 @@ void do_tail(int argc,char **argv,int opt,int opt_position)
 		printf("can not open the dir,please input the real name of dir!\n");
 		exit(EXIT_FAILURE);
 	}
+	if(strlen(dirname)==path_len)
+	  do_tail_dir(dirname,opt);
 
 	/*
 	 *then cicle the whole file in the dir;
@@ -456,17 +458,12 @@ int main(int argc,char **argv)
 	if(argv[argc-1][0]=='-')
 	{
 		int opt;
-		int len;
 		while((opt=getopt(argc,argv,"n"))!=-1)
 		{
 			switch(opt)
 			{
 				case 'n':
-					len=strlen(argv[1]);
-					if(argv[1][len-1]=='/')
-					  do_tail_dir(argv[1],HAS_OPT);
-					else
-					  do_tail(argc,argv,HAS_OPT,OPT_POS_TAIL);
+					do_tail(argc,argv,HAS_OPT,OPT_POS_TAIL);
 					break;
 				default:
 					fprintf(stderr,"Usage:%s [-n] dirname\n",argv[0]);
@@ -477,17 +474,12 @@ int main(int argc,char **argv)
 	else
 	{
 		int opt;
-		int len;
 		while((opt=getopt(argc,argv,"n"))!=-1)
 		{
 			switch(opt)
 			{
 				case 'n':
-					len=strlen(argv[argc-1]);
-					if(argv[argc-1][len-1]=='/')
-					  do_tail_dir(argv[argc-1],HAS_OPT);
-					else
-					  do_tail(argc,argv,HAS_OPT,OPT_POS_BETWEEN);
+					do_tail(argc,argv,HAS_OPT,OPT_POS_BETWEEN);
 					break;
 				default:
 					fprintf(stderr,"Usage:%s [-n] dirname\n",argv[0]);
@@ -496,11 +488,7 @@ int main(int argc,char **argv)
 		}
 		if(opt==-1)
 		{
-			len=strlen(argv[argc-1]);
-			if(argv[argc-1][len-1]=='/')
-			  do_tail_dir(argv[argc-1],NO_OPT);
-			else
-			  do_tail(argc,argv,NO_OPT,OPT_POS_BETWEEN);
+			do_tail(argc,argv,NO_OPT,OPT_POS_BETWEEN);
 		}
 		  
 	}

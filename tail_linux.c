@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <glob.h>
+#include <time.h>
 #include "define.h"
 
 FILENODE *filelist=NULL;
@@ -59,6 +60,20 @@ glob_t get_path(int argc,char **argv,int opt,int opt_position)
 		}
 	}
 	return results;
+}
+
+
+/*
+ *get curent time
+ */
+
+char *get_cur_time()
+{
+	time_t rawtime;
+	struct tm *timeinfo;
+	time(&rawtime);
+	timeinfo=localtime(&rawtime);
+	return asctime(timeinfo);
 }
 
 
@@ -122,7 +137,10 @@ void tail_file_addhead(char *filename,off_t lastposition,off_t filesize)
 		/*char *head=(char *)malloc(sizeof(filename)+3);*/
 		char head[MAX_STR_SIZE];
 		memset(head,0,sizeof(head));
+		char *time=get_cur_time();
 		strcpy(head,"[");
+		strcat(head,time);
+		strcat(head,",");
 		strcat(head,filename);
 		strcat(head,"] ");
 		fflush(fstream);

@@ -18,6 +18,6 @@ typedef struct fileNode
 #define NO_OPT 0
 #define OPT_POS_BETWEEN 0
 #define OPT_POS_TAIL 1
-#define MAX_STR_SIZE 256
+#define MAX_STR_SIZE 512
 
 #endif /*_DEFINE_H */

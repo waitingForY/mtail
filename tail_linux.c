@@ -137,9 +137,10 @@ void tail_file_addhead(char *filename,off_t lastposition,off_t filesize)
 		/*char *head=(char *)malloc(sizeof(filename)+3);*/
 		char head[MAX_STR_SIZE];
 		memset(head,0,sizeof(head));
-		char *time=get_cur_time();
+		char *time_str=get_cur_time();
+		time_str[strlen(time_str)-1]='\0';
 		strcpy(head,"[");
-		strcat(head,time);
+		strcat(head,time_str);
 		strcat(head,",");
 		strcat(head,filename);
 		strcat(head,"] ");

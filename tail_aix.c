@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <glob.h>
+#include <time.h>
 #include "define.h"
 
 FILENODE *filelist=NULL;
@@ -61,7 +62,17 @@ glob_t get_path(int argc,char **argv,int opt,int opt_position)
 	return results;
 }
 
-
+/*
+ *get current time
+ */
+char *get_cur_time()
+{
+	time_t rawtime;
+	struct tm *timeinfo;
+	time(&rawtime);
+	timeinfo=localtime(&rawtime);
+	return asctime(timeinfo);
+}
 
 void init_filelist(FILENODE *head)
 {
@@ -90,6 +101,9 @@ void insert_filelist(FILENODE *node)
 
 
 
+
+
+
 /*
  *
  *caculate the file size
@@ -104,6 +118,9 @@ off_t file_size(char *filename)
 	return size;
 
 }
+
+
+
 
 
 /*
@@ -122,7 +139,11 @@ void tail_file_addhead(char *filename,off_t lastposition,off_t filesize)
 		/*char *head=(char *)malloc(sizeof(filename)+3);*/
 		char head[MAX_STR_SIZE];
 		memset(head,0,sizeof(head));
+		char *time_str=get_cur_time();
+		time_str[strlen(time_str)-1]='\0';
 		strcpy(head,"[");
+		strcat(head,time_str);
+		strcat(head,",");
 		strcat(head,filename);
 		strcat(head,"] ");
 		fflush(fstream);

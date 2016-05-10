@@ -91,7 +91,9 @@ void filelist_clear(FILENODE *head)
 	
 }
 
-
+/*
+ *insert one node into filelist
+ */
 void insert_filelist(FILENODE *node)
 {
 	if(filelist)
@@ -171,6 +173,9 @@ void tail_file_addhead(char *filename,off_t lastposition,off_t filesize)
 	return;
 }
 
+/*
+ *tail file without any head information
+ */
 void tail_file_nohead(char *filename,off_t lastposition,off_t filesize)
 {
 	FILE *fstream;
@@ -198,7 +203,9 @@ void tail_file_nohead(char *filename,off_t lastposition,off_t filesize)
 	return;
 }
 
-
+/*
+ *jadge one string is anothers substring or not
+ */
 int is_substr(char *src,char *dest)
 {
 	if(src==NULL||dest==NULL)

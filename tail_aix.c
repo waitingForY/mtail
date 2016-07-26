@@ -28,7 +28,7 @@ int globerr(const char *path,int eerrno)
 /*
  *get_path ---expand command-line wildcards ,when the opt is between 
  */
-glob_t get_path(int argc,char **argv,int opt,int opt_position)
+glob_t get_path(int argc,char **argv,int opt,int opt_position,int* ispattern)
 {
 	int i;
 	int flags=0;
@@ -56,6 +56,7 @@ glob_t get_path(int argc,char **argv,int opt,int opt_position)
 						 ret==GLOB_NOMATCH?"no match of pattern":
 						 ret==GLOB_NOSPACE?"no dynamic memory":
 						 "unknown problem"));
+			ispattern=0;
 			break;
 		}
 	}
@@ -113,7 +114,8 @@ off_t file_size(char *filename)
 {
 	struct stat statbuf;
 	if(stat(filename,&statbuf)==-1)
-	  ERR_EXIT("stat");
+	  return -1;
+	  //ERR_EXIT("stat");
 	off_t size=statbuf.st_size;
 	return size;
 
@@ -131,7 +133,7 @@ void tail_file_addhead(char *filename,off_t lastposition,off_t filesize)
 {
 	FILE *fstream;
 	fstream=fopen(filename,"r");
-	assert(fstream);
+	//assert(fstream);
 
 	int n;
 	for(n=lastposition;n<filesize;)
@@ -177,7 +179,7 @@ void tail_file_nohead(char *filename,off_t lastposition,off_t filesize)
 {
 	FILE *fstream;
 	fstream=fopen(filename,"r");
-	assert(fstream);
+	//assert(fstream);
 	int n;
 	for(n=lastposition;n<filesize;)
 	{
@@ -227,10 +229,10 @@ int is_substr(char *src,char *dest)
 void do_tail_dir(char *path,int opt)
 {
 	int initlist_flag=1;
+	struct dirent *file;
+	DIR *dir;
 	while(1)
 	{
-		struct dirent *file;
-		DIR *dir;
 		if(!(dir=opendir(path)))
 		  ERR_EXIT("opendir");
 		/*
@@ -298,7 +300,15 @@ void do_tail_dir(char *path,int opt)
 						else if((*it).filesize>size)
 						{
 							(*it).filesize=size;
-							(*it).lastposition=size;
+							(*it).lastposition=0;
+							if(opt==1)
+							{
+								tail_file_addhead((*it).filename,(*it).lastposition,(*it).filesize);
+							}
+							if(opt==0)
+							{
+								tail_file_nohead((*it).filename,(*it).lastposition,(*it).filesize);
+							}
 						}
 						break;
 					}
@@ -312,12 +322,22 @@ void do_tail_dir(char *path,int opt)
 				{
 					FILENODE *node=(FILENODE *)malloc(sizeof(FILENODE));
 					node->filesize=size;
-					node->lastposition=size;
+					node->lastposition=0;
 					node->filename=file_path_name;
 					node->next=NULL;
-					insert_filelist(node);
-				}
+					insert_filelist(node);	
+					if(opt==1)
+					{
+						tail_file_addhead(file_path_name,0,size);
+					}
+					if(opt==0)
+					{
+						tail_file_nohead(file_path_name,0,size);
+					}
 
+				}
+				else
+				  free(file_path_name);
 			}
 
 		}
@@ -339,15 +359,40 @@ void do_tail(int argc,char **argv,int opt,int opt_position)
 	 */
 	char dirname[MAX_STR_SIZE];
 	int i;
-	glob_t results=get_path(argc,argv,opt+1,opt_position);
-	int path_len=strlen(results.gl_pathv[0]);
-	for(i=path_len-1;i>=0;i--)
+	int ispattern=1;
+	glob_t results=get_path(argc,argv,opt+1,opt_position,&ispattern);
+	if(!ispattern)
 	{
-		if(results.gl_pathv[0][i]=='/')
+		if(opt_position==OPT_POS_BETWEEN)
 		{
-			strncpy(dirname,results.gl_pathv[0],i+1);
-			dirname[i+1]='\0';
-			break;
+			for(i=strlen(argv[argc-1])-1;i>=0;i--)
+			  if(argv[1][i]=='/')
+			  {
+				  strncpy(dirname,argv[argc-1],i+1);
+				  dirname[i+1]='\0';
+				  break;
+			  }
+		}
+		if(opt_position==OPT_POS_TAIL)
+		  for(i=strlen(argv[1])-1;i>=0;i--)
+			if(argv[argc-1][i]=='/')
+			{
+				strncpy(dirname,argv[1],i+1);
+				dirname[i+1]='\0';
+				break;
+			}
+	}
+	else
+	{
+		int path_len=strlen(results.gl_pathv[0]);
+		for(i=path_len-1;i>=0;i--)
+		{
+			if(results.gl_pathv[0][i]=='/')
+			{
+				strncpy(dirname,results.gl_pathv[0],i+1);
+				dirname[i+1]='\0';
+				break;
+			}
 		}
 	}
 	if(i==0)
@@ -361,10 +406,10 @@ void do_tail(int argc,char **argv,int opt,int opt_position)
 	 */
 
 	int initlist_flag=1;
+	struct dirent *file;
+	DIR *dir;
 	while(1)
 	{
-		struct dirent *file;
-		DIR *dir;
 		if(!(dir=opendir(dirname)))
 		  ERR_EXIT("opendir");
 		/*
@@ -435,7 +480,15 @@ void do_tail(int argc,char **argv,int opt,int opt_position)
 						else if((*it).filesize>size)
 						{
 							(*it).filesize=size;
-							(*it).lastposition=size;
+							(*it).lastposition=0;
+							if(opt==1)
+							{
+								tail_file_addhead((*it).filename,(*it).lastposition,(*it).filesize);
+							}
+							if(opt==0)
+							{
+								tail_file_nohead((*it).filename,(*it).lastposition,(*it).filesize);
+							}
 						}
 						break;
 					}
@@ -449,11 +502,21 @@ void do_tail(int argc,char **argv,int opt,int opt_position)
 				{
 					FILENODE *node=(FILENODE *)malloc(sizeof(FILENODE));
 					node->filesize=size;
-					node->lastposition=size;
+					node->lastposition=0;
 					node->filename=file_path_name;
 					node->next=NULL;
 					insert_filelist(node);
+					if(opt==1)
+					{
+						tail_file_addhead(file_path_name,0,size);
+					}
+					if(opt==0)
+					{
+						tail_file_nohead(file_path_name,0,size);
+					}
 				}
+				else
+				  free(file_path_name);
 				
 			}
 

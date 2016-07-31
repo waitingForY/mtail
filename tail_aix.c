@@ -342,6 +342,7 @@ void do_tail_dir(char *path,int opt)
 
 		}
 		closedir(dir);
+		usleep(2);
 	}
 	
 }
@@ -509,6 +510,7 @@ void do_tail(int argc,char **argv,int opt,int opt_position)
 
 		}
 		closedir(dir);
+		usleep(2);
 	}
 }
 
